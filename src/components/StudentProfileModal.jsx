@@ -75,6 +75,7 @@ export default function StudentProfileModal({
         {/* Modal Header */}
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img src="/logo-transparent.png" alt="LT1 Education" style={{ height: '32px', width: 'auto' }} />
             <span className="badge badge-blue" style={{ fontSize: '13px' }}>
               MÃ ĐỊNH DANH: {student.studentCode}
             </span>

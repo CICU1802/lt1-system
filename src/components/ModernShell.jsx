@@ -48,17 +48,22 @@ export default function ModernShell({
       {/* 1. SIDEBAR PHONG CÁCH CLEAN CRAFT LIGHT */}
       <aside className="w-64 border-r border-slate-200/80 bg-white flex flex-col justify-between shrink-0 shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
         <div className="overflow-y-auto">
-          {/* Brand header */}
-          <div className="h-16 px-5 flex items-center gap-3 border-b border-slate-100">
-            <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center font-bold text-white text-sm shadow-sm shadow-amber-500/20 tracking-wider">
-              LT1
-            </div>
-            <div>
-              <div className="font-semibold text-sm tracking-tight text-slate-900 flex items-center gap-1.5">
-                Trung tâm LT1
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium border border-amber-200/60">PRO</span>
+          {/* Brand header with Official LT1 Education Logo */}
+          <div className="h-20 px-4 flex items-center gap-3 border-b border-slate-100 bg-white">
+            <img
+              src="/logo-transparent.png"
+              alt="LT1 Education Logo"
+              className="h-11 w-auto max-w-[50px] object-contain shrink-0 drop-shadow-xs"
+            />
+            <div className="min-w-0">
+              <div className="font-extrabold text-[13px] tracking-tight text-[#182C5A] uppercase truncate leading-tight flex items-center gap-1.5">
+                <span>LT1 EDUCATION</span>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-amber-50 text-amber-700 font-bold border border-amber-200/60">PRO</span>
               </div>
-              <div className="text-[11px] text-slate-400 truncate">Hệ thống quản lý giáo dục</div>
+              <div className="text-[9px] font-bold text-[#3B5998] tracking-widest uppercase mt-0.5 truncate">
+                Learn To Be The Best
+              </div>
+              <div className="text-[10px] text-slate-400 truncate mt-0.5">Trung tâm luyện thi & dạy thêm</div>
             </div>
           </div>
 
@@ -137,8 +142,14 @@ export default function ModernShell({
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
         <header className="h-14 border-b border-slate-200/80 bg-white px-6 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-400 font-medium">Trung tâm LT1</span>
+          <div className="flex items-center gap-2.5 text-xs">
+            <div className="flex items-center gap-2">
+              <img src="/logo-transparent.png" alt="LT1 Education" className="h-6 w-auto object-contain shrink-0" />
+              <span className="font-bold text-[#182C5A] tracking-tight">LT1 EDUCATION</span>
+              <span className="text-[10px] font-semibold text-[#3B5998] px-2 py-0.5 rounded bg-blue-50/80 border border-blue-100 tracking-wide uppercase hidden sm:inline">
+                Learn To Be The Best
+              </span>
+            </div>
             <span className="text-slate-300">/</span>
             <span className="font-semibold text-slate-800">{currentTabObj?.label || 'Bảng điều khiển'}</span>
           </div>

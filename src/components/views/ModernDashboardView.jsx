@@ -43,6 +43,51 @@ export default function ModernDashboardView({
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* BRAND HERO BANNER - LT1 EDUCATION (LEARN TO BE THE BEST) */}
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-[#182C5A] via-[#1E3A8A] to-[#2B4C7E] text-white shadow-sm flex items-center justify-between gap-6 flex-wrap relative overflow-hidden">
+        <div className="absolute right-0 top-0 bottom-0 opacity-10 flex items-center pointer-events-none">
+          <img src="/logo-transparent.png" alt="" className="h-64 w-auto object-contain -mr-10" />
+        </div>
+
+        <div className="flex items-center gap-5 relative z-10">
+          <div className="p-2.5 rounded-2xl bg-white shadow-md flex items-center justify-center shrink-0">
+            <img
+              src="/logo-transparent.png"
+              alt="LT1 Education Logo"
+              className="h-14 w-auto object-contain"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white uppercase">
+                LT1 EDUCATION
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
+                CHÍNH THỨC
+              </span>
+            </div>
+            <div className="text-xs sm:text-sm font-semibold text-blue-200 tracking-wider uppercase mb-1">
+              LEARN TO BE THE BEST
+            </div>
+            <p className="text-xs text-blue-100/90 max-w-xl">
+              Trung tâm bồi dưỡng văn hóa & luyện thi chất lượng cao (Chuẩn THPT Quốc Gia & ĐGNL ĐHQG TP.HCM).
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 relative z-10 text-xs">
+          <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/15">
+            <div className="text-[11px] text-blue-200">Hotline Học Vụ:</div>
+            <div className="font-mono font-bold text-white text-sm">0918 111 222</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/15">
+            <div className="text-[11px] text-blue-200">Địa Điểm Đào Tạo:</div>
+            <div className="font-semibold text-white">Quận 3, TP. Hồ Chí Minh</div>
+          </div>
+        </div>
+      </div>
+
       {/* 1. KHỐI TÁC VỤ CẦN XỬ LÝ (ACTION REQUIRED HUB) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Ca học cần điểm danh */}

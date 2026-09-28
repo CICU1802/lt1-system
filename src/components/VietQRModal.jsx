@@ -57,15 +57,14 @@ export default function VietQRModal({ invoice, onClose, onConfirmPayment }) {
       >
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-center font-bold">
-              <ShieldCheck size={18} />
-            </div>
+          <div className="flex items-center gap-3">
+            <img src="/logo-transparent.png" alt="LT1 Education" className="h-9 w-auto object-contain" />
             <div>
-              <div className="text-sm font-semibold text-slate-900">
-                Thanh toán học phí qua VietQR
+              <div className="text-sm font-bold text-[#182C5A] flex items-center gap-1.5">
+                <span>LT1 EDUCATION</span>
+                <span className="text-[10px] font-semibold text-[#3B5998] px-1.5 py-0.2 rounded bg-blue-50 border border-blue-100 uppercase">VietQR</span>
               </div>
-              <div className="text-[11px] text-slate-400">Chuẩn EMVCo chuyển khoản 24/7</div>
+              <div className="text-[11px] text-slate-500">Cổng thanh toán học phí chính thức • Learn to be the best</div>
             </div>
           </div>
           <button 

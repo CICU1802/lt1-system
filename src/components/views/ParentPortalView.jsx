@@ -121,20 +121,25 @@ export default function ParentPortalView({
         </div>
       )}
 
-      {/* TOP HEADER */}
+      {/* Header with Official Logo */}
       <div className="p-5 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-between gap-4 flex-wrap shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-base font-semibold text-slate-900 tracking-tight">
-              Sổ liên lạc điện tử — Cổng phụ huynh & học sinh
-            </h1>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
-              Cổng tra cứu trực tuyến LT1
-            </span>
+        <div className="flex items-center gap-4">
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 shrink-0">
+            <img src="/logo-transparent.png" alt="LT1 Education" className="h-12 w-auto object-contain" />
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Phụ huynh có thể tra cứu kết quả học tập, chuyên cần và thanh toán học phí qua VietQR
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-bold text-[#182C5A] tracking-tight">
+                LT1 Education — Sổ Liên Lạc Điện Tử
+              </h1>
+              <span className="text-[10px] font-semibold text-[#3B5998] px-2 py-0.5 rounded-full bg-blue-50 border border-blue-100 uppercase tracking-wider">
+                Learn To Be The Best
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Cổng tra cứu kết quả học tập, chuyên cần và học phí trực tuyến dành riêng cho Phụ huynh & Học sinh LT1
+            </p>
+          </div>
         </div>
 
         {/* Action Button: Open Zalo Preview Drawer */}

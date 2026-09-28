@@ -428,7 +428,7 @@ export default function StudentsView({
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        THPT Marie Curie • Nhập học: {selectedStudent.joinDate || '15/08/2026'}
+                        Học viên LT1 Education • THPT Marie Curie • Nhập học: {selectedStudent.joinDate || '15/08/2026'}
                       </p>
                     </div>
                   </div>

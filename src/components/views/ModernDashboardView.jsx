@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Clock,
-  AlertTriangle,
   AlertCircle,
   CreditCard,
   Calendar,
@@ -10,18 +9,18 @@ import {
   UserCheck,
   ChevronRight,
   Send,
-  RotateCcw,
-  Sparkles,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 
 export default function ModernDashboardView({
-  students,
-  classes,
-  attendance,
-  invoices,
-  makeups,
+  students = [],
+  classes = [],
+  attendance = [],
+  invoices = [],
+  makeups = [],
   setCurrentTab,
   onOpenStudentProfile,
   onOpenVietQR
@@ -32,296 +31,258 @@ export default function ModernDashboardView({
   const pendingMakeups = makeups.filter(m => m.status === 'pending');
 
   const totalPaid = invoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
+  const totalReceivable = invoices.reduce((sum, inv) => sum + (inv.finalAmount || 0), 0);
   const paidCount = invoices.filter(inv => inv.status === 'paid').length;
-  const totalInvoicesCount = invoices.length;
-  const collectionPercent = totalInvoicesCount > 0 ? Math.round((paidCount / totalInvoicesCount) * 100) : 0;
+  const collectionPercent = invoices.length > 0 ? Math.round((paidCount / invoices.length) * 100) : 0;
 
   const handleQuickZalo = (student) => {
     const text = `Kính gửi phụ huynh, em ${student.name} (${student.studentCode}) đã vắng mặt 2 buổi học gần nhất tại Trung tâm LT1. Xin phụ huynh vui lòng phản hồi để trung tâm bố trí lịch học bù kịp thời cho con. Trân trọng!`;
     navigator.clipboard.writeText(text);
-    alert(`✓ Đã sao chép nội dung tin nhắn Zalo gửi Phụ Huynh ${student.name}!\n\n"${text}"`);
+    alert(`Đã sao chép tin nhắn Zalo gửi phụ huynh em ${student.name}!`);
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* KHỐI 1: ACTION REQUIRED (Việc cần làm ngay của Trợ giảng / Quản lý) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* 1. Ca học cần điểm danh ngay */}
-        <div className="p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 shadow-lg relative overflow-hidden flex flex-col justify-between">
-          <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
+      {/* 1. KHỐI TÁC VỤ CẦN XỬ LÝ (ACTION REQUIRED HUB) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* Ca học cần điểm danh */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between relative">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
-                CẦN ĐIỂM DANH NGAY
+              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200/60 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                Cần điểm danh hôm nay
               </span>
-              <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
-                <Clock size={12} className="text-amber-400" /> 17:30 - 19:30
+              <span className="text-xs text-slate-500 flex items-center gap-1">
+                <Clock size={12} className="text-slate-400" /> 17:30 - 19:30
               </span>
             </div>
-            <h3 className="text-base font-bold text-white tracking-tight">Toán Nâng Cao 10A (T10-PRO)</h3>
-            <p className="text-xs text-slate-400 mt-1">Phòng 201 • ThS. Nguyễn Văn Thành • Sĩ số: 30 HS</p>
+            <h3 className="text-base font-semibold text-slate-900 tracking-tight">Toán Nâng Cao 10A</h3>
+            <p className="text-xs text-slate-500 mt-1">Phòng 201 • ThS. Nguyễn Văn Thành • Sĩ số: 30 học sinh</p>
           </div>
-          <div className="mt-4 flex gap-2">
+          <div className="mt-5">
             <button
               onClick={() => setCurrentTab('attendance')}
-              className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/20 flex items-center justify-center gap-1.5"
+              className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-medium text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Zap size={14} /> Vào điểm danh ca này
             </button>
           </div>
         </div>
 
-        {/* 2. Cảnh báo học sinh vắng học liên tiếp */}
-        <div className="p-4 rounded-xl bg-slate-900/90 border border-rose-500/30 shadow-lg flex flex-col justify-between">
+        {/* Cảnh báo học sinh nghỉ học liên tiếp */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center gap-1.5">
-                <AlertCircle size={12} /> CẢNH BÁO NGHỈ 2 BUỔI
+              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200/60 flex items-center gap-1.5">
+                <AlertCircle size={12} className="text-rose-600" /> Cảnh báo nghỉ học
               </span>
-              <span className="text-xs text-rose-400 font-semibold">{alertStudents.length} học sinh</span>
+              <span className="text-xs text-rose-700 font-medium">{alertStudents.length} học sinh</span>
             </div>
-            <div className="space-y-2 text-xs">
+            <div className="space-y-2.5 text-xs">
               {alertStudents.slice(0, 2).map(st => (
-                <div key={st.id} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/60 border border-slate-800">
+                <div key={st.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                   <div>
                     <p
-                      className="font-semibold text-slate-200 cursor-pointer hover:text-amber-400 transition"
+                      className="font-medium text-slate-800 cursor-pointer hover:text-amber-700 transition"
                       onClick={() => onOpenStudentProfile(st)}
                     >
-                      {st.name} ({st.studentCode})
+                      {st.name} <span className="font-mono text-[11px] text-slate-400">({st.studentCode})</span>
                     </p>
-                    <p className="text-[10px] text-rose-400 mt-0.5">Vắng 2 buổi liên tiếp không phép</p>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => handleQuickZalo(st)}
-                      className="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded text-[11px] font-medium transition"
-                      title="Copy tin nhắn thông báo Zalo phụ huynh"
-                    >
-                      Báo Zalo
-                    </button>
-                    <button
-                      onClick={() => setCurrentTab('makeup')}
-                      className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-[11px] font-medium transition"
-                    >
-                      Xếp bù
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {alertStudents.length === 0 && (
-                <div className="p-4 text-center text-xs text-slate-500">
-                  ✓ Toàn bộ học sinh chuyên cần tốt!
-                </div>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={() => setCurrentTab('attendance')}
-            className="w-full mt-3 py-1.5 text-center text-[11px] text-slate-400 hover:text-slate-200 transition"
-          >
-            Xem nhật ký điểm danh chi tiết →
-          </button>
-        </div>
-
-        {/* 3. Học phí & Đối soát VietQR trong ngày */}
-        <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 shadow-lg flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-slate-400 tracking-wider">THỰC THU THÁNG (VIETQR)</span>
-              <span className="text-xs text-emerald-400 font-bold">+{totalPaid.toLocaleString('vi-VN')} đ</span>
-            </div>
-            <div className="text-2xl font-black text-white tracking-tight">
-              {paidCount}/{totalInvoicesCount} <span className="text-xs font-normal text-slate-400">hóa đơn hoàn thành ({collectionPercent}%)</span>
-            </div>
-            <div className="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500"
-                style={{ width: `${collectionPercent}%` }}
-              ></div>
-            </div>
-            {overdueInvoices.length > 0 && (
-              <div className="mt-3 text-[11px] text-rose-400 flex items-center justify-between">
-                <span>⚠️ {overdueInvoices.length} hồ sơ quá hạn nộp học phí</span>
-                <span className="font-bold">{overdueInvoices.reduce((s, i) => s + i.remainingAmount, 0).toLocaleString('vi-VN')} đ</span>
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => setCurrentTab('tuition')}
-            className="w-full mt-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5"
-          >
-            <CreditCard size={14} className="text-emerald-400" />
-            Mở sổ thu học phí & VietQR Terminal
-          </button>
-        </div>
-      </div>
-
-      {/* KHỐI 2: DATA TABLE SẮP XẾP CA DẠY HÔM NAY (Linear-style table) */}
-      <div className="rounded-xl border border-slate-800/80 bg-slate-900/70 overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/40">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-bold text-white tracking-tight uppercase">LỊCH VẬN HÀNH CA DẠY HÔM NAY</h2>
-            <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono">
-              {classes.length} ca học
-            </span>
-          </div>
-          <button
-            onClick={() => setCurrentTab('schedule')}
-            className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1"
-          >
-            Xem toàn bộ tuần <ArrowRight size={13} />
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950/80 text-slate-400 font-mono text-[11px] border-b border-slate-800">
-              <tr>
-                <th className="py-3 px-4">GIỜ HỌC</th>
-                <th className="py-3 px-4">MÃ & TÊN LỚP HỌC</th>
-                <th className="py-3 px-4">GIÁO VIÊN</th>
-                <th className="py-3 px-4">PHÒNG</th>
-                <th className="py-3 px-4">SĨ SỐ / ĐIỂM DANH</th>
-                <th className="py-3 px-4 text-right">THAO TÁC</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300">
-              {classes.map((cls, idx) => {
-                const isFirst = idx === 0;
-                return (
-                  <tr key={cls.id} className="hover:bg-slate-800/40 transition">
-                    <td className="py-3.5 px-4 font-mono text-amber-400 font-semibold">
-                      {cls.scheduleTime}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-white flex items-center gap-2">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-mono">
-                          {cls.code}
-                        </span>
-                        <span>{cls.name}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">{cls.subject} • Khóa luyện thi</div>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-300 font-medium">
-                      {cls.teacherId === 'tc-01' ? 'ThS. Nguyễn Văn Thành' : cls.teacherId === 'tc-02' ? 'ThS. Trần Thị Mai Lan' : 'ThS. Lê Hoàng Long'}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300 font-mono">
-                        {cls.room}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {isFirst ? (
-                        <span className="text-amber-400 font-semibold flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                          Đang điểm danh (30 HS)
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 font-medium">Ca chưa bắt đầu</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      {isFirst ? (
-                        <button
-                          onClick={() => setCurrentTab('attendance')}
-                          className="px-3 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded font-semibold transition shadow-sm"
-                        >
-                          Điểm danh
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setCurrentTab('classes')}
-                          className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-medium transition"
-                        >
-                          Chi tiết
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* KHỐI 3: LEAN METRICS & PHỔ ĐIỂM KHẢO SÁT THI THỬ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Phân bố phổ điểm thi thử gần nhất */}
-        <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Phổ Điểm Khảo Sát ĐGNL / THPT Gần Nhất</h3>
-            <span className="text-[11px] text-amber-400 font-mono">Toán 10A</span>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-emerald-400 font-medium">Xuất sắc (9.0 - 10.0)</span>
-                <span className="font-bold text-white">2 học sinh (50%)</span>
-              </div>
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-emerald-400 h-full w-[50%]"></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-blue-400 font-medium">Khá - Giỏi (7.0 - 8.9)</span>
-                <span className="font-bold text-white">1 học sinh (25%)</span>
-              </div>
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-blue-400 h-full w-[25%]"></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-rose-400 font-medium">Cần bổ trợ (&lt; 6.5)</span>
-                <span className="font-bold text-white">1 học sinh (25%)</span>
-              </div>
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-rose-400 h-full w-[25%]"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Trạng thái học bù & Chuyên cần */}
-        <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 shadow-lg flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider">Điều Phối Học Bù & Phụ Đạo</h3>
-              <span className="text-[11px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
-                {pendingMakeups.length} ca chờ học
-              </span>
-            </div>
-            <div className="space-y-2 text-xs">
-              {pendingMakeups.map(mk => (
-                <div key={mk.id} className="p-2.5 rounded-lg bg-slate-800/40 border border-slate-800 flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-slate-200">{mk.studentName}</span>
-                    <span className="text-slate-500 text-[11px] ml-2">Vắng: {mk.originalClassName}</span>
-                    <div className="text-[11px] text-amber-400 mt-0.5">Xếp bù: {mk.targetClassName} ({mk.targetDate})</div>
+                    <p className="text-[11px] text-rose-600 mt-0.5">Vắng 2 buổi liên tiếp</p>
                   </div>
                   <button
-                    onClick={() => setCurrentTab('makeup')}
-                    className="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                    onClick={() => handleQuickZalo(st)}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-medium transition cursor-pointer"
+                    title="Sao chép tin nhắn Zalo"
                   >
-                    Xem lịch
+                    Báo Zalo
                   </button>
                 </div>
               ))}
             </div>
           </div>
-          <button
-            onClick={() => setCurrentTab('makeup')}
-            className="w-full mt-3 py-1.5 text-center text-[11px] text-slate-400 hover:text-slate-200 transition"
-          >
-            Mở toàn bộ danh sách điều phối học bù →
-          </button>
+          <div className="mt-4 pt-2 border-t border-slate-100">
+            <button
+              onClick={() => setCurrentTab('students')}
+              className="text-xs text-slate-600 hover:text-slate-900 font-medium flex items-center justify-between w-full"
+            >
+              <span>Xem danh sách học sinh</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Công nợ học phí quá hạn */}
+        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200/60 flex items-center gap-1.5">
+                <CreditCard size={12} className="text-amber-600" /> Học phí quá hạn
+              </span>
+              <span className="text-xs text-slate-500">{overdueInvoices.length} hóa đơn</span>
+            </div>
+            <div className="space-y-2.5 text-xs">
+              {overdueInvoices.slice(0, 2).map(inv => (
+                <div key={inv.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <div>
+                    <p className="font-medium text-slate-800">{inv.studentName}</p>
+                    <p className="text-[11px] text-slate-500 tabular-nums">
+                      {inv.remainingAmount.toLocaleString('vi-VN')} đ • Hạn {inv.dueDate}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onOpenVietQR(inv)}
+                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-medium transition shadow-2xs cursor-pointer"
+                  >
+                    Gửi QR
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 pt-2 border-t border-slate-100">
+            <button
+              onClick={() => setCurrentTab('tuition')}
+              className="text-xs text-slate-600 hover:text-slate-900 font-medium flex items-center justify-between w-full"
+            >
+              <span>Xem sổ thu học phí</span>
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. LỊCH VẬN HÀNH HÔM NAY & DÒNG TIỀN */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Lịch dạy trong ngày (8 cols) */}
+        <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Lịch dạy trong ngày</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Thứ Hai, ngày 28/09/2026 • 4 ca giảng dạy</p>
+            </div>
+            <button
+              onClick={() => setCurrentTab('schedule')}
+              className="text-xs text-amber-700 hover:text-amber-800 font-medium flex items-center gap-1"
+            >
+              <span>Xem thời khóa biểu tuần</span>
+              <ArrowRight size={12} />
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-600 border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 text-slate-500 font-medium border-b border-slate-100">
+                  <th className="py-2.5 px-4">Ca dạy</th>
+                  <th className="py-2.5 px-4">Lớp học</th>
+                  <th className="py-2.5 px-4">Giáo viên & Trợ giảng</th>
+                  <th className="py-2.5 px-4 text-center">Sĩ số</th>
+                  <th className="py-2.5 px-4 text-right">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {classes.slice(0, 4).map((c, i) => {
+                  const isCurrent = i === 0;
+                  const isDone = i === 1;
+                  return (
+                    <tr key={c.id} className={isCurrent ? 'bg-amber-50/30' : 'hover:bg-slate-50/60 transition'}>
+                      <td className="py-3 px-4 font-medium text-slate-900 flex items-center gap-2">
+                        {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>}
+                        <span>{c.scheduleTime}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900">{c.name}</div>
+                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">{c.code} • Phòng {c.room}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-slate-800 font-medium">ThS. Nguyễn Văn Thành</div>
+                        <div className="text-[11px] text-slate-400">Trợ giảng: Bùi Minh Đức</div>
+                      </td>
+                      <td className="py-3 px-4 text-center tabular-nums font-medium text-slate-700">
+                        {c.maxCapacity - 2} / {c.maxCapacity}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {isCurrent ? (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/60 font-medium text-[11px]">
+                            Đang diễn ra
+                          </span>
+                        ) : isDone ? (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-medium text-[11px]">
+                            Đã chốt sổ
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium text-[11px]">
+                            Sắp bắt đầu
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Dòng tiền & Tỷ lệ thu học phí (4 cols) */}
+        <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="text-sm font-semibold text-slate-900">Dòng tiền & học phí</h2>
+              <span className="text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium">Tháng 9/2026</span>
+            </div>
+
+            <div className="mt-4">
+              <div className="text-xs text-slate-500">Thực thu đã ghi nhận</div>
+              <div className="text-2xl font-bold text-slate-900 tracking-tight mt-1 tabular-nums">
+                {totalPaid.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-400">VNĐ</span>
+              </div>
+              <div className="text-xs text-slate-400 mt-0.5 tabular-nums">
+                Tổng dự kiến: {totalReceivable.toLocaleString('vi-VN')} đ
+              </div>
+
+              {/* Progress bar */}
+              <div className="mt-4">
+                <div className="flex justify-between text-xs text-slate-600 mb-1.5">
+                  <span>Tiến độ thu học phí</span>
+                  <span className="font-semibold text-slate-900 tabular-nums">{collectionPercent}%</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-amber-500 transition-all duration-500"
+                    style={{ width: `${collectionPercent}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-2 text-xs">
+              <div className="flex justify-between py-1.5 border-b border-slate-50">
+                <span className="text-slate-500">Học sinh đang theo học</span>
+                <span className="font-semibold text-slate-800 tabular-nums">{activeStudents.length} học sinh</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-slate-50">
+                <span className="text-slate-500">Yêu cầu học bù chưa xếp</span>
+                <span className="font-semibold text-amber-700 tabular-nums">{pendingMakeups.length} yêu cầu</span>
+              </div>
+              <div className="flex justify-between py-1.5">
+                <span className="text-slate-500">Lớp học đang mở</span>
+                <span className="font-semibold text-slate-800 tabular-nums">{classes.filter(c => !c.isArchived).length} lớp</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 pt-3 border-t border-slate-100">
+            <button
+              onClick={() => setCurrentTab('tuition')}
+              className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-xs transition border border-slate-200/60 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>Vào sổ thu học phí</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

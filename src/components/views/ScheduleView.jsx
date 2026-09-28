@@ -4,13 +4,13 @@ import {
   Clock,
   MapPin,
   User,
-  Filter,
-  Layers,
+  Users,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Filter
 } from 'lucide-react';
 
-export default function ScheduleView({ classes, teachers, grades, onOpenStudentProfile }) {
+export default function ScheduleView({ classes = [], teachers = [], grades = [], onOpenStudentProfile }) {
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedSession, setSelectedSession] = useState('all'); // 'all' | 'morning' | 'afternoon'
 
@@ -23,124 +23,148 @@ export default function ScheduleView({ classes, teachers, grades, onOpenStudentP
     return true;
   });
 
+  const getSubjectBadge = (subject) => {
+    if (subject?.includes('Toán')) return 'border-l-amber-500 bg-amber-50/50';
+    if (subject?.includes('Lý')) return 'border-l-blue-500 bg-blue-50/50';
+    if (subject?.includes('Hóa')) return 'border-l-purple-500 bg-purple-50/50';
+    return 'border-l-emerald-500 bg-emerald-50/50';
+  };
+
   return (
-    <div className="page-container">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="page-header">
+      <div className="p-5 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-between gap-4 flex-wrap shadow-xs">
         <div>
-          <h1 className="page-title">
-            <CalendarDays size={24} color="var(--brand-blue)" />
-            Thời Khóa Biểu & Lịch Giảng Dạy Tuần
+          <h1 className="text-base font-semibold text-slate-900 tracking-tight">
+            Thời khóa biểu & lịch giảng dạy tuần
           </h1>
-          <p className="page-description">
-            Theo dõi phân bổ phòng học, ca học sáng/chiều, giáo viên phụ trách và trợ giảng theo ngày trong tuần.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Phân bổ phòng học, ca học sáng/chiều, giáo viên phụ trách và trợ giảng theo từng ngày
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs">
+          <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-medium">
+            Tuần 4 • Học kỳ I
+          </span>
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="card" style={{ marginBottom: '20px' }}>
-        <div className="card-body" style={{ padding: '14px 20px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>Lọc Khối:</span>
+      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-between gap-4 flex-wrap text-xs shadow-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-slate-500 font-medium">Khối học:</span>
+          <button
+            onClick={() => setSelectedGrade('all')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              selectedGrade === 'all' ? 'bg-amber-50 text-amber-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            Tất cả
+          </button>
+          {grades.map(g => (
             <button
-              className={`btn btn-sm ${selectedGrade === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setSelectedGrade('all')}
+              key={g.id}
+              onClick={() => setSelectedGrade(g.id)}
+              className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+                selectedGrade === g.id ? 'bg-amber-50 text-amber-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+              }`}
             >
-              Tất Cả Khối
+              {g.name}
             </button>
-            {grades.map(g => (
-              <button
-                key={g.id}
-                className={`btn btn-sm ${selectedGrade === g.id ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setSelectedGrade(g.id)}
-              >
-                {g.name}
-              </button>
-            ))}
-          </div>
+          ))}
+        </div>
 
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>Buổi Học:</span>
-            <button
-              className={`btn btn-sm ${selectedSession === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setSelectedSession('all')}
-            >
-              Tất Cả
-            </button>
-            <button
-              className={`btn btn-sm ${selectedSession === 'morning' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setSelectedSession('morning')}
-            >
-              Ca Sáng
-            </button>
-            <button
-              className={`btn btn-sm ${selectedSession === 'afternoon' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setSelectedSession('afternoon')}
-            >
-              Ca Chiều / Tối
-            </button>
-          </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-slate-500 font-medium">Buổi học:</span>
+          <button
+            onClick={() => setSelectedSession('all')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              selectedSession === 'all' ? 'bg-amber-50 text-amber-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            Cả ngày
+          </button>
+          <button
+            onClick={() => setSelectedSession('morning')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              selectedSession === 'morning' ? 'bg-amber-50 text-amber-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            Ca Sáng
+          </button>
+          <button
+            onClick={() => setSelectedSession('afternoon')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              selectedSession === 'afternoon' ? 'bg-amber-50 text-amber-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            Ca Chiều / Tối
+          </button>
         </div>
       </div>
 
-      {/* Weekly Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-        {daysOfWeek.map(day => {
+      {/* Weekly Grid (Notion / Google Calendar style) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
+        {daysOfWeek.map((day, idx) => {
           const dayClasses = filteredClasses.filter(c => c.scheduleDays?.includes(day));
+          const isToday = day === 'Thứ 2';
 
           return (
-            <div key={day} className="card" style={{ marginBottom: 0, minHeight: '380px' }}>
-              <div
-                className="card-header"
-                style={{
-                  background: day === 'Thứ 2' ? 'linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-blue) 100%)' : 'var(--bg-subtle)',
-                  color: day === 'Thứ 2' ? '#ffffff' : 'var(--brand-navy)',
-                  padding: '12px 14px'
-                }}
-              >
-                <div style={{ fontWeight: '800', fontSize: '14px' }}>{day}</div>
-                <span className="badge badge-gray" style={{ fontSize: '11px', background: day === 'Thứ 2' ? 'rgba(255,255,255,0.2)' : '', color: day === 'Thứ 2' ? '#ffffff' : '' }}>
-                  {dayClasses.length} ca học
-                </span>
+            <div
+              key={day}
+              className={`rounded-2xl border bg-white flex flex-col min-h-[340px] shadow-xs overflow-hidden ${
+                isToday ? 'border-amber-300 ring-2 ring-amber-400/20' : 'border-slate-200/80'
+              }`}
+            >
+              {/* Day Header */}
+              <div className={`p-3 border-b text-center ${
+                isToday ? 'bg-amber-50/70 border-amber-200' : 'bg-slate-50 border-slate-100'
+              }`}>
+                <div className={`text-xs font-semibold ${isToday ? 'text-amber-900' : 'text-slate-800'}`}>
+                  {day}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  {dayClasses.length} ca dạy
+                </div>
               </div>
 
-              <div className="card-body" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Day Events */}
+              <div className="p-2 space-y-2 flex-1 overflow-y-auto">
                 {dayClasses.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-muted)', fontSize: '12.5px' }}>
-                    Không có lịch học
+                  <div className="h-full flex items-center justify-center p-3 text-center text-[11px] text-slate-400">
+                    Nghỉ ca
                   </div>
                 ) : (
                   dayClasses.map(cls => {
                     const teacher = teachers.find(t => t.id === cls.teacherId);
+                    const subjectStyle = getSubjectBadge(cls.subject);
 
                     return (
                       <div
                         key={cls.id}
-                        style={{
-                          background: '#ffffff',
-                          border: '1px solid var(--border-color)',
-                          borderLeft: cls.sessionType === 'morning' ? '4px solid #f59e0b' : '4px solid var(--brand-blue)',
-                          borderRadius: 'var(--radius-sm)',
-                          padding: '10px',
-                          boxShadow: 'var(--shadow-xs)'
-                        }}
+                        className={`p-2.5 rounded-xl border border-slate-200/70 border-l-3 transition hover:shadow-sm ${subjectStyle}`}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <span className="badge badge-blue" style={{ fontSize: '10px', padding: '2px 6px' }}>{cls.code}</span>
-                          <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>{cls.room}</span>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-mono text-[10px] font-semibold text-slate-700 bg-white px-1.5 py-0.2 rounded border border-slate-200/60">
+                            {cls.code}
+                          </span>
+                          <span className="text-[10px] font-medium text-slate-500">
+                            {cls.room}
+                          </span>
                         </div>
 
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--brand-navy)', marginBottom: '4px' }}>
+                        <div className="font-semibold text-xs text-slate-900 leading-snug truncate">
                           {cls.name}
                         </div>
 
-                        <div style={{ fontSize: '11.5px', color: 'var(--brand-blue)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={11} /> {cls.scheduleTime}
+                        <div className="text-[11px] text-slate-600 mt-1 flex items-center gap-1 font-medium">
+                          <Clock size={11} className="text-slate-400 shrink-0" />
+                          <span>{cls.scheduleTime}</span>
                         </div>
 
-                        <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                          GV: {teacher?.name?.split('.').pop() || 'Chưa xếp'}
+                        <div className="text-[10px] text-slate-500 mt-1 truncate">
+                          GV: {teacher?.name || 'ThS. Nguyễn Văn Thành'}
                         </div>
                       </div>
                     );

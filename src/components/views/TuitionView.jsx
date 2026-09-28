@@ -3,22 +3,23 @@ import {
   CreditCard,
   Plus,
   QrCode,
-  AlertTriangle,
-  CheckCircle,
+  AlertCircle,
+  CheckCircle2,
   Clock,
   Send,
   Filter,
   DollarSign,
   Tag,
   Search,
-  Check
+  Check,
+  Building2
 } from 'lucide-react';
 
 export default function TuitionView({
-  invoices,
-  students,
-  classes,
-  combos,
+  invoices = [],
+  students = [],
+  classes = [],
+  combos = [],
   onAddInvoice,
   onOpenVietQR,
   onConfirmPayment,
@@ -26,7 +27,7 @@ export default function TuitionView({
 }) {
   const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'unpaid' | 'overdue' | 'paid'
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [smsNotificationMsg, setSmsNotificationMsg] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
 
   // Invoice creation form
   const [formData, setFormData] = useState({
@@ -47,12 +48,11 @@ export default function TuitionView({
   const selectedClasses = classes.filter(c => formData.selectedClassIds.includes(c.id));
   const rawSum = selectedClasses.reduce((acc, c) => acc + (c.feePerMonth || 0), 0);
   
-  // Calculate combo discount: 2 classes -> 10%, 3+ classes -> 15%
   let discountPct = 0;
   let comboName = 'Không áp dụng';
   if (selectedClasses.length >= 3) {
     discountPct = 15;
-    comboName = 'Combo Vàng 3 môn (-15%)';
+    comboName = 'Combo 3 môn (-15%)';
   } else if (selectedClasses.length === 2) {
     discountPct = 10;
     comboName = 'Combo 2 môn (-10%)';
@@ -92,7 +92,7 @@ export default function TuitionView({
       studentName: selectedStudent.name,
       studentCode: selectedStudent.studentCode,
       classIds: formData.selectedClassIds,
-      classNames: selectedClasses.map(c => `${c.name} (${c.feePerMonth?.toLocaleString('vi-VN')}đ)`),
+      classNames: selectedClasses.map(c => `${c.name}`),
       rawAmount: rawSum,
       discountAmount: discountVal,
       discountReason: comboName,
@@ -107,95 +107,113 @@ export default function TuitionView({
 
     onAddInvoice(newInv);
     setIsModalOpen(false);
+    showToast(`Đã tạo hóa đơn mới cho học sinh ${selectedStudent.name}.`);
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4500);
   };
 
   const handleSendReminderSMS = (inv) => {
     const classId = inv.classNames?.[0]?.split(' ')[0] || 'TOAN10';
     const cleanCode = (inv.studentCode || 'HS24-001').replace('-', '');
-    const text = `Kính gửi phụ huynh, học phí tháng của em ${inv.studentName} (${inv.studentCode}) tại Trung tâm LT1 là ${inv.remainingAmount.toLocaleString('vi-VN')} đ (Hạn đóng: ${inv.dueDate}). Phụ huynh có thể quét mã VietQR hoặc chuyển khoản cú pháp: LT1 ${cleanCode} ${classId}. Trân trọng!`;
+    const text = `Kính gửi phụ huynh, học phí tháng của em ${inv.studentName} (${inv.studentCode}) tại Trung tâm LT1 là ${inv.remainingAmount.toLocaleString('vi-VN')} đ (Hạn đóng: ${inv.dueDate}). Phụ huynh có thể chuyển khoản với cú pháp: LT1 ${cleanCode} ${classId}. Trân trọng!`;
     navigator.clipboard.writeText(text);
-    setSmsNotificationMsg(`Đã sao chép tin nhắn nhắc học phí kèm cú pháp VietQR gửi phụ huynh em ${inv.studentName}!`);
-    setTimeout(() => setSmsNotificationMsg(''), 4500);
+    showToast(`Đã sao chép tin nhắn nhắc học phí kèm cú pháp VietQR gửi phụ huynh em ${inv.studentName}!`);
   };
 
   return (
-    <div className="page-container">
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">
-            <CreditCard size={24} color="var(--brand-blue)" />
-            Học Phí, Combo Ưu Đãi & QR Thanh Toán Động
-          </h1>
-          <p className="page-description">
-            Tự động cộng dồn học phí nhiều môn, chiết khấu combo 10% - 15%, tạo mã VietQR động đúng số tiền và theo dõi nhắc nợ.
-          </p>
-        </div>
-
-        <button className="btn btn-primary" onClick={handleOpenAdd}>
-          <Plus size={16} /> Tạo Hóa Đơn Mới
-        </button>
-      </div>
-
-      {smsNotificationMsg && (
-        <div style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', padding: '12px 18px', borderRadius: 'var(--radius-md)', color: '#065f46', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Check size={18} /> {smsNotificationMsg}
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between gap-3 shadow-xs animate-fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+          <button onClick={() => setToastMessage('')} className="text-emerald-600 hover:text-emerald-800">✕</button>
         </div>
       )}
 
-      {/* Filter Tabs (Item 30: Danh sách học sinh chưa đóng / quá hạn) */}
-      <div className="card" style={{ marginBottom: '20px' }}>
-        <div className="card-body" style={{ padding: '14px 20px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Header */}
+      <div className="p-5 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-between gap-4 flex-wrap shadow-xs">
+        <div>
+          <h1 className="text-base font-semibold text-slate-900 tracking-tight">
+            Sổ thu học phí, combo ưu đãi & Smart VietQR
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Tự động cộng dồn học phí nhiều môn, chiết khấu combo 10% - 15%, tạo mã VietQR động chuẩn EMVCo
+          </p>
+        </div>
+
+        <button
+          onClick={handleOpenAdd}
+          className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+        >
+          <Plus size={14} /> Tạo hóa đơn mới
+        </button>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-between gap-4 flex-wrap text-xs shadow-xs">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            className={`btn btn-sm ${filterStatus === 'all' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilterStatus('all')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              filterStatus === 'all' ? 'bg-amber-50 text-amber-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            }`}
           >
-            Tất Cả ({invoices.length})
+            Tất cả ({invoices.length})
           </button>
           <button
-            className={`btn btn-sm ${filterStatus === 'overdue' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ color: filterStatus === 'overdue' ? '#ffffff' : 'var(--color-danger)' }}
             onClick={() => setFilterStatus('overdue')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              filterStatus === 'overdue' ? 'bg-rose-50 text-rose-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            }`}
           >
-            <AlertTriangle size={14} /> Danh Sách Quá Hạn ({invoices.filter(i => i.status === 'overdue').length})
+            Quá hạn ({invoices.filter(i => i.status === 'overdue').length})
           </button>
           <button
-            className={`btn btn-sm ${filterStatus === 'unpaid' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilterStatus('unpaid')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              filterStatus === 'unpaid' ? 'bg-amber-50 text-amber-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            }`}
           >
-            <Clock size={14} /> Chưa Đóng / Đóng Một Phần ({invoices.filter(i => i.status === 'unpaid' || i.status === 'partial').length})
+            Chưa đóng ({invoices.filter(i => i.status === 'unpaid' || i.status === 'partial').length})
           </button>
           <button
-            className={`btn btn-sm ${filterStatus === 'paid' ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setFilterStatus('paid')}
+            className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+              filterStatus === 'paid' ? 'bg-emerald-50 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
+            }`}
           >
-            <CheckCircle size={14} /> Đã Hoàn Thành ({invoices.filter(i => i.status === 'paid').length})
+            Đã hoàn thành ({invoices.filter(i => i.status === 'paid').length})
           </button>
         </div>
       </div>
 
       {/* Invoices List Table */}
-      <div className="card">
-        <div className="table-container">
-          <table className="modern-table">
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-700 border-collapse">
             <thead>
-              <tr>
-                <th>Mã Hóa Đơn</th>
-                <th>Học Sinh</th>
-                <th>Lớp / Môn Đăng Ký</th>
-                <th>Học Phí Gốc</th>
-                <th>Ưu Đãi Combo</th>
-                <th>Tổng Phải Thu</th>
-                <th>Còn Nợ</th>
-                <th>Hạn Đóng</th>
-                <th>Trạng Thái</th>
-                <th style={{ textAlign: 'right' }}>Thao Tác</th>
+              <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 font-medium">
+                <th className="py-2.5 px-4">Mã hóa đơn</th>
+                <th className="py-2.5 px-4">Học sinh</th>
+                <th className="py-2.5 px-4">Lớp đăng ký</th>
+                <th className="py-2.5 px-4">Ưu đãi</th>
+                <th className="py-2.5 px-4">Tổng phải thu</th>
+                <th className="py-2.5 px-4">Còn nợ</th>
+                <th className="py-2.5 px-4">Hạn đóng</th>
+                <th className="py-2.5 px-4">Trạng thái</th>
+                <th className="py-2.5 px-4 text-right">Tác vụ</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {filteredInvoices.length === 0 ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  <td colSpan="9" className="text-center py-8 text-slate-400">
                     Không có hóa đơn nào phù hợp với bộ lọc hiện tại.
                   </td>
                 </tr>
@@ -204,13 +222,13 @@ export default function TuitionView({
                   const isOverdue = inv.status === 'overdue';
 
                   return (
-                    <tr key={inv.id} className={isOverdue ? 'row-danger' : ''}>
-                      <td>
-                        <strong>{inv.invoiceCode}</strong>
+                    <tr key={inv.id} className={isOverdue ? 'bg-rose-50/30' : 'hover:bg-slate-50/60 transition'}>
+                      <td className="py-3 px-4 font-mono font-medium text-slate-900">
+                        {inv.invoiceCode}
                       </td>
-                      <td>
+                      <td className="py-3 px-4">
                         <div
-                          style={{ fontWeight: '700', color: 'var(--brand-navy)', cursor: 'pointer' }}
+                          className="font-medium text-slate-900 cursor-pointer hover:text-amber-700 transition"
                           onClick={() => {
                             const st = students.find(s => s.id === inv.studentId);
                             if (st) onOpenStudentProfile(st);
@@ -218,70 +236,57 @@ export default function TuitionView({
                         >
                           {inv.studentName}
                         </div>
-                        <span className="badge badge-blue" style={{ fontSize: '11px' }}>
-                          {inv.studentCode}
-                        </span>
+                        <div className="font-mono text-[10px] text-slate-400 mt-0.5">{inv.studentCode}</div>
                       </td>
-                      <td style={{ fontSize: '12px', maxWidth: '200px' }}>
+                      <td className="py-3 px-4 text-[11px] text-slate-600 max-w-[200px] truncate">
                         {inv.classNames.join(', ')}
                       </td>
-                      <td>{inv.rawAmount.toLocaleString('vi-VN')} đ</td>
-                      <td>
+                      <td className="py-3 px-4">
                         {inv.discountAmount > 0 ? (
-                          <div>
-                            <span className="badge badge-blue" style={{ fontSize: '11px' }}>
-                              -{inv.discountAmount.toLocaleString('vi-VN')} đ
-                            </span>
-                            <div style={{ fontSize: '10.5px', color: 'var(--brand-blue)', marginTop: '2px' }}>
-                              {inv.discountReason}
-                            </div>
-                          </div>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
+                            -{inv.discountAmount.toLocaleString('vi-VN')} đ
+                          </span>
                         ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>-</span>
+                          <span className="text-slate-400">-</span>
                         )}
                       </td>
-                      <td>
-                        <strong style={{ fontSize: '14px', color: 'var(--brand-navy)' }}>
-                          {inv.finalAmount.toLocaleString('vi-VN')} đ
-                        </strong>
+                      <td className="py-3 px-4 font-semibold text-slate-900 tabular-nums">
+                        {inv.finalAmount.toLocaleString('vi-VN')} đ
                       </td>
-                      <td>
-                        <strong style={{ color: inv.remainingAmount > 0 ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                      <td className="py-3 px-4 font-semibold tabular-nums text-slate-900">
+                        <span className={inv.remainingAmount > 0 ? 'text-rose-600' : 'text-emerald-700'}>
                           {inv.remainingAmount.toLocaleString('vi-VN')} đ
-                        </strong>
+                        </span>
                       </td>
-                      <td>
-                        <div style={{ fontSize: '12.5px', color: isOverdue ? 'var(--color-danger)' : 'var(--text-secondary)', fontWeight: isOverdue ? '700' : '500' }}>
-                          {inv.dueDate}
-                        </div>
+                      <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">
+                        {inv.dueDate}
                       </td>
-                      <td>
-                        {inv.status === 'paid' && <span className="badge badge-success">✓ Đã đóng</span>}
-                        {inv.status === 'partial' && <span className="badge badge-warning">Đóng 1 phần</span>}
-                        {inv.status === 'unpaid' && <span className="badge badge-gray">Chưa đóng</span>}
-                        {inv.status === 'overdue' && <span className="badge badge-danger">⚠️ Quá hạn</span>}
+                      <td className="py-3 px-4">
+                        {inv.status === 'paid' && <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-medium">Đã đóng</span>}
+                        {inv.status === 'partial' && <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-medium">Đóng 1 phần</span>}
+                        {inv.status === 'unpaid' && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">Chưa đóng</span>}
+                        {inv.status === 'overdue' && <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[11px] font-medium">Quá hạn</span>}
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '6px' }}>
-                          {/* VietQR Button (Item 27) */}
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => onOpenVietQR(inv)}
-                            title="Tạo mã VietQR đúng số tiền thanh toán"
-                          >
-                            <QrCode size={13} /> Mã QR
-                          </button>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {inv.remainingAmount > 0 && (
+                            <>
+                              <button
+                                onClick={() => onOpenVietQR(inv)}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium text-xs transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                                title="Mở mã QR thanh toán"
+                              >
+                                <QrCode size={13} /> VietQR
+                              </button>
 
-                          {/* Reminder button for unpaid/overdue (Item 29) */}
-                          {inv.status !== 'paid' && (
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              style={{ color: '#b45309' }}
-                              onClick={() => handleSendReminderSMS(inv)}
-                              title="Gửi nhắc học phí đến phụ huynh"
-                            >
-                              <Send size={13} /> Nhắc
-                            </button>
+                              <button
+                                onClick={() => handleSendReminderSMS(inv)}
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs transition flex items-center gap-1 cursor-pointer"
+                                title="Nhắc nợ Zalo"
+                              >
+                                <Send size={12} />
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -294,108 +299,98 @@ export default function TuitionView({
         </div>
       </div>
 
-      {/* Create Invoice Modal with Auto-Combo Calculation */}
+      {/* CREATE INVOICE MODAL */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content modal-content-lg" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title">Tạo Hóa Đơn Thu Học Phí & Đăng Ký Lớp</div>
-              <button className="btn-icon" onClick={() => setIsModalOpen(false)}>&times;</button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl p-5 text-slate-800 text-xs">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <CreditCard size={16} className="text-amber-600" /> Tạo hóa đơn học phí mới
+            </h3>
 
-            <form onSubmit={handleCreateInvoice}>
-              <div className="modal-body">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Chọn Học Sinh *</label>
-                    <select
-                      className="form-control"
-                      value={formData.studentId}
-                      onChange={e => {
-                        const st = students.find(s => s.id === e.target.value);
-                        setFormData({
-                          ...formData,
-                          studentId: e.target.value,
-                          selectedClassIds: st?.classIds || []
-                        });
-                      }}
-                      required
-                    >
-                      {students.filter(s => s.status === 'active').map(st => (
-                        <option key={st.id} value={st.id}>
-                          {st.name} ({st.studentCode})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            <form onSubmit={handleCreateInvoice} className="space-y-4">
+              <div>
+                <label className="block text-slate-600 mb-1 font-medium">Chọn học sinh (*)</label>
+                <select
+                  value={formData.studentId}
+                  onChange={e => {
+                    const st = students.find(s => s.id === e.target.value);
+                    setFormData({
+                      ...formData,
+                      studentId: e.target.value,
+                      selectedClassIds: st?.classIds || []
+                    });
+                  }}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900"
+                >
+                  {students.filter(s => s.status === 'active').map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.studentCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Hạn Chót Thanh Toán *</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={formData.dueDate}
-                      onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Class Selection */}
-                <div className="form-group">
-                  <label className="form-label">Tích Chọn Các Lớp Đăng Ký (Tự động cộng dồn & tính ưu đãi)</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', border: '1px solid var(--border-color)', padding: '14px', borderRadius: 'var(--radius-md)', maxHeight: '180px', overflowY: 'auto' }}>
-                    {classes.map(c => (
-                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', background: formData.selectedClassIds.includes(c.id) ? 'var(--brand-blue-subtle)' : 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                          <input
-                            type="checkbox"
-                            checked={formData.selectedClassIds.includes(c.id)}
-                            onChange={() => handleToggleClass(c.id)}
-                          />
-                          <span><strong>{c.code}</strong> - {c.name}</span>
-                        </div>
-                        <span style={{ fontSize: '12.5px', fontWeight: '700', color: 'var(--brand-blue)' }}>
-                          {c.feePerMonth?.toLocaleString('vi-VN')} đ
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Auto Calculated Invoice Summary (Requirements 23, 24, 25) */}
-                <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--brand-navy)', marginBottom: '10px' }}>
-                    Bảng Kê Chi Tiết Học Phí (Tự Động Tính):
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Tổng học phí gốc ({selectedClasses.length} lớp):</span>
-                    <strong>{rawSum.toLocaleString('vi-VN')} đ</strong>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px', color: 'var(--brand-blue)' }}>
-                    <span>Chương trình ưu đãi combo:</span>
-                    <strong>
-                      {discountPct > 0 ? `${comboName} (-${discountVal.toLocaleString('vi-VN')} đ)` : 'Chưa áp dụng (Đăng ký từ 2 môn giảm 10%)'}
-                    </strong>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: '800', borderTop: '1px dashed var(--border-color)', paddingTop: '10px', marginTop: '10px', color: 'var(--brand-navy)' }}>
-                    <span>Tổng tiền phải thanh toán:</span>
-                    <span style={{ color: 'var(--brand-blue)', fontSize: '18px' }}>
-                      {finalSum.toLocaleString('vi-VN')} đ
-                    </span>
-                  </div>
+              <div>
+                <label className="block text-slate-600 mb-1 font-medium">Các môn đăng ký đóng học phí</label>
+                <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200 max-h-36 overflow-y-auto">
+                  {classes.map(c => (
+                    <label key={c.id} className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-white text-slate-700">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedClassIds.includes(c.id)}
+                          onChange={() => handleToggleClass(c.id)}
+                          className="rounded border-slate-300 text-amber-600 cursor-pointer"
+                        />
+                        <span>{c.name} ({c.code})</span>
+                      </div>
+                      <span className="font-semibold tabular-nums text-slate-900">
+                        {c.feePerMonth?.toLocaleString('vi-VN')} đ
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-                  Hủy Bỏ
+              {/* Live Combo Calculation */}
+              <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-1.5">
+                <div className="flex justify-between text-slate-600">
+                  <span>Tổng học phí gốc:</span>
+                  <span className="font-medium tabular-nums">{rawSum.toLocaleString('vi-VN')} đ</span>
+                </div>
+                <div className="flex justify-between text-amber-800 font-medium">
+                  <span>Ưu đãi áp dụng ({comboName}):</span>
+                  <span className="tabular-nums">-{discountVal.toLocaleString('vi-VN')} đ ({discountPct}%)</span>
+                </div>
+                <div className="flex justify-between text-slate-900 font-bold pt-1.5 border-t border-amber-200 text-sm">
+                  <span>Thực thu hóa đơn:</span>
+                  <span className="tabular-nums">{finalSum.toLocaleString('vi-VN')} VNĐ</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 mb-1 font-medium">Hạn thanh toán</label>
+                <input
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
+                >
+                  Hủy
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={selectedClasses.length === 0}>
-                  Xác Nhận Xuất Hóa Đơn & Sinh Mã QR
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-medium cursor-pointer"
+                >
+                  Tạo hóa đơn
                 </button>
               </div>
             </form>

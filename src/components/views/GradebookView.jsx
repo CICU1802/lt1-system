@@ -103,7 +103,7 @@ export default function GradebookView({
     setScoresState(prev => prev.map(s => s.studentId === studentId ? { ...s, comment: val } : s));
   };
 
-  // EXCEL HOTKEYS: Enter / Tab / ArrowDown jumps to next student
+  // EXCEL HOTKEYS
   const handleScoreKeyDown = (e, index) => {
     if (e.key === 'Enter' || e.key === 'ArrowDown') {
       e.preventDefault();
@@ -120,7 +120,7 @@ export default function GradebookView({
     }
   };
 
-  // SAVE SCORES WITH NATURAL ACTION VOICE
+  // SAVE SCORES
   const handleSaveScores = () => {
     if (!currentExam) return;
     const gradedCount = scoresState.filter(s => s.score !== '' && s.score !== null).length;
@@ -128,7 +128,7 @@ export default function GradebookView({
       ...s,
       score: s.score === '' ? 0 : Number(s.score)
     })));
-    showToast(`Đã lưu bảng điểm bài kiểm tra "${currentExam.title}". ${gradedCount}/${classStudents.length} học sinh đã được cập nhật điểm vào học bạ.`);
+    showToast(`Đã lưu bảng điểm bài kiểm tra "${currentExam.title}". ${gradedCount}/${classStudents.length} học sinh đã được cập nhật điểm.`);
   };
 
   const handleCreateExam = (e) => {
@@ -153,10 +153,10 @@ export default function GradebookView({
     onAddExam(newExam);
     setSelectedExamId(newExam.id);
     setIsModalOpen(false);
-    showToast(`Đã khởi tạo đợt kiểm tra mới: "${newExam.title}". Bạn có thể vào điểm ngay bây giờ.`);
+    showToast(`Đã khởi tạo đợt kiểm tra mới: "${newExam.title}". Bạn có thể vào điểm ngay.`);
   };
 
-  // Quick statistics calculation
+  // Quick statistics
   const numericScores = scoresState
     .map(s => Number(s.score))
     .filter(sc => !isNaN(sc) && sc > 0);
@@ -167,72 +167,64 @@ export default function GradebookView({
 
   const maxScoreFound = numericScores.length > 0 ? Math.max(...numericScores) : 0;
   const goodCount = numericScores.filter(s => s >= 8.0).length;
-  const fairCount = numericScores.filter(s => s >= 6.5 && s < 8.0).length;
-  const averageCount = numericScores.filter(s => s >= 5.0 && s < 6.5).length;
-  const weakCount = numericScores.filter(s => s < 5.0).length;
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       {/* Toast Feedback */}
       {toastMessage && (
-        <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top-1">
+        <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between gap-3 shadow-xs animate-fade-in">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
             <span className="font-medium">{toastMessage}</span>
           </div>
-          <button onClick={() => setToastMessage('')} className="text-emerald-400/80 hover:text-emerald-300">✕</button>
+          <button onClick={() => setToastMessage('')} className="text-emerald-600 hover:text-emerald-800">✕</button>
         </div>
       )}
 
       {/* TOP HEADER */}
-      <div className="p-4 rounded-xl bg-[#0B1120] border border-slate-800 flex items-center justify-between gap-4 flex-wrap shadow-xl">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
-            <Award size={20} />
+      <div className="p-5 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-between gap-4 flex-wrap shadow-xs">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-base font-semibold text-slate-900 tracking-tight">
+              Sổ điểm điện tử & khảo sát định kỳ
+            </h1>
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium flex items-center gap-1">
+              <Keyboard size={12} /> Excel Hotkeys: Enter, Tab, ↑↓
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-white tracking-tight">
-                Sổ Điểm Điện Tử & Khảo Sát Định Kỳ
-              </h1>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold uppercase flex items-center gap-1">
-                <Keyboard size={11} /> Excel Hotkeys
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Bấm phím Tab hoặc Enter để tự động chuyển dòng nhập điểm học sinh kế tiếp
-            </p>
-          </div>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Bấm phím Tab hoặc Enter để tự động chuyển dòng nhập điểm học sinh kế tiếp
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition flex items-center gap-1.5 cursor-pointer"
           >
             <Plus size={14} /> Tạo bài khảo sát mới
           </button>
 
           <button
             onClick={handleSaveScores}
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-medium text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <Save size={14} /> Lưu Toàn Bộ Bảng Điểm
+            <Save size={14} /> Lưu toàn bộ bảng điểm
           </button>
         </div>
       </div>
 
       {/* SELECTORS & STATS BANNER */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Selectors */}
-        <div className="lg:col-span-8 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-4 flex-wrap text-xs">
+        <div className="lg:col-span-8 p-3.5 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-between gap-4 flex-wrap text-xs shadow-xs">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-slate-400 font-semibold">Chọn Lớp:</span>
+              <span className="text-slate-500 font-medium">Lớp học:</span>
               <select
                 value={selectedClassId}
                 onChange={e => handleSelectClass(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-medium focus:outline-none focus:border-amber-500"
+                className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-amber-500 cursor-pointer"
               >
                 {classes.map(c => (
                   <option key={c.id} value={c.id}>
@@ -243,11 +235,11 @@ export default function GradebookView({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-slate-400 font-semibold">Chọn Bài kiểm tra:</span>
+              <span className="text-slate-500 font-medium">Bài kiểm tra:</span>
               <select
                 value={selectedExamId}
                 onChange={e => handleSelectExam(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-medium focus:outline-none focus:border-amber-500"
+                className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-amber-500 cursor-pointer"
               >
                 {classExams.map(ex => (
                   <option key={ex.id} value={ex.id}>
@@ -258,98 +250,97 @@ export default function GradebookView({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-slate-400">
-            <span>Sĩ số: <strong className="text-white">{classStudents.length} HS</strong></span>
+          <div className="flex items-center gap-2 text-slate-500">
+            <span>Sĩ số: <strong className="text-slate-900">{classStudents.length} HS</strong></span>
           </div>
         </div>
 
         {/* Live Metrics Card */}
-        <div className="lg:col-span-4 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-around text-xs">
+        <div className="lg:col-span-4 p-3.5 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-around text-xs shadow-xs">
           <div className="text-center">
-            <div className="text-[10px] text-slate-400 uppercase">Điểm TB Lớp</div>
-            <div className="text-base font-bold text-amber-400 mt-0.5">{avgScore}</div>
+            <div className="text-[11px] text-slate-400">Điểm TB Lớp</div>
+            <div className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">{avgScore}</div>
           </div>
-          <div className="w-px h-7 bg-slate-800"></div>
+          <div className="w-px h-7 bg-slate-100"></div>
           <div className="text-center">
-            <div className="text-[10px] text-slate-400 uppercase">Điểm Cao Nhất</div>
-            <div className="text-base font-bold text-emerald-400 mt-0.5">{maxScoreFound}</div>
+            <div className="text-[11px] text-slate-400">Điểm Cao Nhất</div>
+            <div className="text-base font-bold text-emerald-700 mt-0.5 tabular-nums">{maxScoreFound}</div>
           </div>
-          <div className="w-px h-7 bg-slate-800"></div>
+          <div className="w-px h-7 bg-slate-100"></div>
           <div className="text-center">
-            <div className="text-[10px] text-slate-400 uppercase">Giỏi (≥8.0)</div>
-            <div className="text-base font-bold text-blue-400 mt-0.5">{goodCount} HS</div>
+            <div className="text-[11px] text-slate-400">Giỏi (≥8.0)</div>
+            <div className="text-base font-bold text-amber-800 mt-0.5 tabular-nums">{goodCount} HS</div>
           </div>
         </div>
       </div>
 
       {/* SPREADSHEET TABLE FOR GRADES */}
-      <div className="bg-[#0B1120] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <div className="px-4 py-3 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between text-xs">
-          <span className="font-semibold text-slate-300 flex items-center gap-2">
-            <FileCheck size={14} className="text-amber-400" />
-            Nhập Điểm: {currentExam?.title || 'Bài kiểm tra'}
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs">
+        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between text-xs">
+          <span className="font-semibold text-slate-800">
+            Nhập điểm: {currentExam?.title || 'Bài kiểm tra'}
           </span>
-          <span className="text-slate-400 font-mono text-[11px]">
+          <span className="text-slate-400">
             Nhấn Enter hoặc Tab để chuyển ô tiếp theo
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300 border-collapse">
+          <table className="w-full text-left text-xs text-slate-700 border-collapse">
             <thead>
-              <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 font-medium">
-                <th className="py-2.5 px-3 w-12 text-center">STT</th>
-                <th className="py-2.5 px-3">Mã HS & Họ Tên</th>
-                <th className="py-2.5 px-3 w-40 text-center">Điểm số (Thang 10)</th>
-                <th className="py-2.5 px-3 w-28 text-center">Xếp loại</th>
-                <th className="py-2.5 px-3">Nhận xét của Giáo viên</th>
+              <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-500 font-medium">
+                <th className="py-2.5 px-4 w-12 text-center">STT</th>
+                <th className="py-2.5 px-4">Mã & Họ tên học sinh</th>
+                <th className="py-2.5 px-4 w-36 text-center">Điểm số (Thang 10)</th>
+                <th className="py-2.5 px-4 w-28 text-center">Xếp loại</th>
+                <th className="py-2.5 px-4">Nhận xét của giáo viên</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 font-sans">
+            <tbody className="divide-y divide-slate-100">
               {classStudents.map((st, idx) => {
                 const scItem = scoresState.find(s => s.studentId === st.id) || { score: '', comment: '' };
                 const numScore = Number(scItem.score);
                 let rankLabel = '—';
-                let rankClass = 'text-slate-500';
+                let rankClass = 'text-slate-400';
 
                 if (scItem.score !== '' && !isNaN(numScore)) {
                   if (numScore >= 8.0) {
                     rankLabel = 'Giỏi';
-                    rankClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                    rankClass = 'text-emerald-700 bg-emerald-50';
                   } else if (numScore >= 6.5) {
                     rankLabel = 'Khá';
-                    rankClass = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                    rankClass = 'text-blue-700 bg-blue-50';
                   } else if (numScore >= 5.0) {
                     rankLabel = 'Trung bình';
-                    rankClass = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+                    rankClass = 'text-amber-800 bg-amber-50';
                   } else {
-                    rankLabel = 'Yếu / Bù';
-                    rankClass = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                    rankLabel = 'Cần bù';
+                    rankClass = 'text-rose-700 bg-rose-50';
                   }
                 }
 
                 return (
-                  <tr key={st.id} className="hover:bg-slate-900/40 transition">
-                    <td className="py-2.5 px-3 text-center font-mono text-slate-500 text-[11px]">
+                  <tr key={st.id} className="hover:bg-slate-50/60 transition">
+                    <td className="py-2.5 px-4 text-center font-mono text-slate-400 text-[11px]">
                       {idx + 1}
                     </td>
 
-                    <td className="py-2.5 px-3">
+                    <td className="py-2.5 px-4">
                       <div className="flex items-center gap-2">
                         <span
                           onClick={() => onOpenStudentProfile && onOpenStudentProfile(st)}
-                          className="font-semibold text-slate-200 hover:text-amber-400 transition cursor-pointer"
+                          className="font-medium text-slate-900 hover:text-amber-700 transition cursor-pointer"
                         >
                           {st.name}
                         </span>
-                        <span className="font-mono text-[10px] text-slate-400 bg-slate-900 px-1 py-0.2 rounded border border-slate-800">
+                        <span className="font-mono text-[10px] text-slate-400 bg-slate-100 px-1 py-0.2 rounded">
                           {st.studentCode}
                         </span>
                       </div>
                     </td>
 
-                    {/* Numeric Score Input with Excel Keys */}
-                    <td className="py-2.5 px-3 text-center">
+                    {/* Numeric Score Input */}
+                    <td className="py-2.5 px-4 text-center">
                       <input
                         ref={el => scoreInputRefs.current[idx] = el}
                         type="number"
@@ -360,25 +351,25 @@ export default function GradebookView({
                         value={scItem.score}
                         onChange={e => handleScoreChange(st.id, e.target.value)}
                         onKeyDown={e => handleScoreKeyDown(e, idx)}
-                        className="w-24 text-center py-1 rounded-lg bg-slate-950 border border-slate-800 text-amber-400 font-mono font-bold text-sm focus:outline-none focus:border-amber-500 focus:bg-amber-500/5 transition"
+                        className="w-20 text-center py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 font-mono font-bold text-sm focus:outline-none focus:border-amber-500 focus:bg-white transition tabular-nums"
                       />
                     </td>
 
                     {/* Rank Badge */}
-                    <td className="py-2.5 px-3 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${rankClass}`}>
+                    <td className="py-2.5 px-4 text-center">
+                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium ${rankClass}`}>
                         {rankLabel}
                       </span>
                     </td>
 
                     {/* Comment */}
-                    <td className="py-2.5 px-3">
+                    <td className="py-2.5 px-4">
                       <input
                         type="text"
-                        placeholder="Nhận xét ưu/nhược điểm..."
+                        placeholder="Nhận xét bài làm..."
                         value={scItem.comment}
                         onChange={e => handleCommentChange(st.id, e.target.value)}
-                        className="w-full px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                        className="w-full px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500"
                       />
                     </td>
                   </tr>
@@ -391,59 +382,59 @@ export default function GradebookView({
 
       {/* CREATE EXAM MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md bg-[#0B1120] border border-slate-700 rounded-2xl shadow-2xl p-5 text-slate-100">
-            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-              <Award size={16} className="text-amber-400" /> Tạo Đợt Khảo Sát / Thi Thử Mới
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-2xl p-5 text-slate-800 text-xs">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <Award size={16} className="text-amber-600" /> Tạo đợt kiểm tra / khảo sát mới
             </h3>
 
-            <form onSubmit={handleCreateExam} className="space-y-3.5 text-xs">
+            <form onSubmit={handleCreateExam} className="space-y-3.5">
               <div>
-                <label className="block text-slate-400 mb-1">Tên bài kiểm tra / Khảo sát</label>
+                <label className="block text-slate-600 mb-1 font-medium">Tên bài kiểm tra</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Khảo sát Toán 10 Lần 1 - Chuyên đề Hàm Số"
+                  placeholder="Khảo sát Toán 10 Lần 1 - Chuyên đề Hàm số"
                   value={examForm.title}
                   onChange={e => setExamForm({ ...examForm, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-amber-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">Ngày thi</label>
+                  <label className="block text-slate-600 mb-1 font-medium">Ngày thi</label>
                   <input
                     type="date"
                     required
                     value={examForm.date}
                     onChange={e => setExamForm({ ...examForm, date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Thang điểm tối đa</label>
+                  <label className="block text-slate-600 mb-1 font-medium">Thang điểm tối đa</label>
                   <input
                     type="number"
                     required
                     value={examForm.maxScore}
                     onChange={e => setExamForm({ ...examForm, maxScore: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-amber-500 font-mono"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-amber-500 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold"
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-medium cursor-pointer"
                 >
                   Tạo bài kiểm tra
                 </button>

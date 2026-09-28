@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
-import TopHeader from './components/TopHeader';
+import ModernShell from './components/ModernShell';
+import CommandPalette from './components/CommandPalette';
 import StudentProfileModal from './components/StudentProfileModal';
 import VietQRModal from './components/VietQRModal';
 
-import DashboardView from './components/views/DashboardView';
+import ModernDashboardView from './components/views/ModernDashboardView';
 import StudentsView from './components/views/StudentsView';
 import ClassesView from './components/views/ClassesView';
 import ScheduleView from './components/views/ScheduleView';
@@ -29,10 +29,10 @@ import {
 } from './data/mockData';
 
 export default function App() {
-  // App state
+  // App navigation state
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [userRole, setUserRole] = useState('admin'); // 'admin' | 'staff' | 'teacher' | 'assistant' | 'parent'
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Domain data
   const [students, setStudents] = useState(initialStudents);
@@ -49,13 +49,12 @@ export default function App() {
   const [activeStudentProfile, setActiveStudentProfile] = useState(null);
   const [activeVietQRInvoice, setActiveVietQRInvoice] = useState(null);
 
-  // Keyboard shortcut: Cmd/Ctrl + K to focus search
+  // Keyboard shortcut: Cmd/Ctrl + K to open Command Palette
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        const searchInput = document.querySelector('.search-input');
-        if (searchInput) searchInput.focus();
+        setIsCommandPaletteOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -223,158 +222,159 @@ export default function App() {
   };
 
   return (
-    <div className="app-layout">
-      {/* Sidebar Navigation */}
-      <Sidebar
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        alertCount={alertCount}
-        overdueCount={overdueCount}
-        userRole={userRole}
-      />
-
-      {/* Main Wrapper */}
-      <div className="main-wrapper">
-        <TopHeader
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          userRole={userRole}
-          setUserRole={handleRoleChange}
-          alertCount={alertCount}
-          overdueCount={overdueCount}
-          onOpenAlerts={() => setCurrentTab('attendance')}
+    <ModernShell
+      currentTab={currentTab}
+      setCurrentTab={setCurrentTab}
+      userRole={userRole}
+      setUserRole={handleRoleChange}
+      alertCount={alertCount}
+      overdueCount={overdueCount}
+      onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+    >
+      {/* View Router */}
+      {currentTab === 'dashboard' && (
+        <ModernDashboardView
+          students={students}
+          classes={classes}
+          attendance={attendance}
+          invoices={invoices}
+          makeups={makeups}
+          setCurrentTab={setCurrentTab}
+          onOpenStudentProfile={setActiveStudentProfile}
+          onOpenVietQR={setActiveVietQRInvoice}
         />
+      )}
 
-        {/* View Router */}
-        <main>
-          {currentTab === 'dashboard' && (
-            <DashboardView
-              students={students}
-              classes={classes}
-              attendance={attendance}
-              invoices={invoices}
-              makeups={makeups}
-              setCurrentTab={setCurrentTab}
-              onOpenStudentProfile={setActiveStudentProfile}
-              onOpenVietQR={setActiveVietQRInvoice}
-            />
-          )}
+      {currentTab === 'students' && (
+        <StudentsView
+          students={students}
+          classes={classes}
+          invoices={invoices}
+          exams={exams}
+          attendance={attendance}
+          onAddStudent={handleAddStudent}
+          onUpdateStudent={handleUpdateStudent}
+          onToggleStudentStatus={handleToggleStudentStatus}
+          onOpenStudentProfile={setActiveStudentProfile}
+          onOpenVietQR={setActiveVietQRInvoice}
+        />
+      )}
 
-          {currentTab === 'students' && (
-            <StudentsView
-              students={students}
-              classes={classes}
-              onAddStudent={handleAddStudent}
-              onUpdateStudent={handleUpdateStudent}
-              onToggleStudentStatus={handleToggleStudentStatus}
-              onOpenStudentProfile={setActiveStudentProfile}
-              initialSearch={searchQuery}
-            />
-          )}
+      {currentTab === 'classes' && (
+        <ClassesView
+          classes={classes}
+          grades={grades}
+          teachers={teachers}
+          students={students}
+          onAddClass={handleAddClass}
+          onUpdateClass={handleUpdateClass}
+          onToggleArchiveClass={handleToggleArchiveClass}
+          onAddGrade={handleAddGrade}
+        />
+      )}
 
-          {currentTab === 'classes' && (
-            <ClassesView
-              classes={classes}
-              grades={grades}
-              teachers={teachers}
-              students={students}
-              onAddClass={handleAddClass}
-              onUpdateClass={handleUpdateClass}
-              onToggleArchiveClass={handleToggleArchiveClass}
-              onAddGrade={handleAddGrade}
-            />
-          )}
+      {currentTab === 'schedule' && (
+        <ScheduleView
+          classes={classes}
+          teachers={teachers}
+          grades={grades}
+          onOpenStudentProfile={setActiveStudentProfile}
+        />
+      )}
 
-          {currentTab === 'schedule' && (
-            <ScheduleView
-              classes={classes}
-              teachers={teachers}
-              grades={grades}
-              onOpenStudentProfile={setActiveStudentProfile}
-            />
-          )}
+      {currentTab === 'attendance' && (
+        <AttendanceView
+          classes={classes}
+          students={students}
+          attendance={attendance}
+          userRole={userRole}
+          onSaveAttendance={handleSaveAttendance}
+          onToggleLockAttendance={handleToggleLockAttendance}
+          onOpenStudentProfile={setActiveStudentProfile}
+        />
+      )}
 
-          {currentTab === 'attendance' && (
-            <AttendanceView
-              classes={classes}
-              students={students}
-              attendance={attendance}
-              userRole={userRole}
-              onSaveAttendance={handleSaveAttendance}
-              onToggleLockAttendance={handleToggleLockAttendance}
-              onOpenStudentProfile={setActiveStudentProfile}
-            />
-          )}
+      {currentTab === 'makeup' && (
+        <MakeupClassView
+          makeups={makeups}
+          students={students}
+          classes={classes}
+          onAddMakeup={handleAddMakeup}
+          onUpdateMakeupStatus={handleUpdateMakeupStatus}
+          onOpenStudentProfile={setActiveStudentProfile}
+        />
+      )}
 
-          {currentTab === 'makeup' && (
-            <MakeupClassView
-              makeups={makeups}
-              students={students}
-              classes={classes}
-              onAddMakeup={handleAddMakeup}
-              onUpdateMakeupStatus={handleUpdateMakeupStatus}
-              onOpenStudentProfile={setActiveStudentProfile}
-            />
-          )}
+      {currentTab === 'staff' && (
+        <StaffView
+          teachers={teachers}
+          classes={classes}
+          onAddTeacher={handleAddTeacher}
+          onUpdateTeacher={handleUpdateTeacher}
+        />
+      )}
 
-          {currentTab === 'staff' && (
-            <StaffView
-              teachers={teachers}
-              classes={classes}
-              onAddTeacher={handleAddTeacher}
-              onUpdateTeacher={handleUpdateTeacher}
-            />
-          )}
+      {currentTab === 'tuition' && (
+        <TuitionView
+          invoices={invoices}
+          students={students}
+          classes={classes}
+          combos={combos}
+          onAddInvoice={handleAddInvoice}
+          onOpenVietQR={setActiveVietQRInvoice}
+          onConfirmPayment={handleConfirmPayment}
+          onOpenStudentProfile={setActiveStudentProfile}
+        />
+      )}
 
-          {currentTab === 'tuition' && (
-            <TuitionView
-              invoices={invoices}
-              students={students}
-              classes={classes}
-              combos={combos}
-              onAddInvoice={handleAddInvoice}
-              onOpenVietQR={setActiveVietQRInvoice}
-              onConfirmPayment={handleConfirmPayment}
-              onOpenStudentProfile={setActiveStudentProfile}
-            />
-          )}
+      {currentTab === 'gradebook' && (
+        <GradebookView
+          exams={exams}
+          classes={classes}
+          students={students}
+          onAddExam={handleAddExam}
+          onUpdateExamScores={handleUpdateExamScores}
+          onOpenStudentProfile={setActiveStudentProfile}
+        />
+      )}
 
-          {currentTab === 'gradebook' && (
-            <GradebookView
-              exams={exams}
-              classes={classes}
-              students={students}
-              onAddExam={handleAddExam}
-              onUpdateExamScores={handleUpdateExamScores}
-              onOpenStudentProfile={setActiveStudentProfile}
-            />
-          )}
+      {currentTab === 'parent-portal' && (
+        <ParentPortalView
+          students={students}
+          classes={classes}
+          attendance={attendance}
+          invoices={invoices}
+          exams={exams}
+          makeups={makeups}
+          onOpenVietQR={setActiveVietQRInvoice}
+        />
+      )}
 
-          {currentTab === 'parent-portal' && (
-            <ParentPortalView
-              students={students}
-              classes={classes}
-              attendance={attendance}
-              invoices={invoices}
-              exams={exams}
-              makeups={makeups}
-              onOpenVietQR={setActiveVietQRInvoice}
-            />
-          )}
+      {currentTab === 'reports' && (
+        <ReportsView
+          students={students}
+          classes={classes}
+          attendance={attendance}
+          invoices={invoices}
+          makeups={makeups}
+          teachers={teachers}
+          exams={exams}
+        />
+      )}
 
-          {currentTab === 'reports' && (
-            <ReportsView
-              students={students}
-              classes={classes}
-              attendance={attendance}
-              invoices={invoices}
-              makeups={makeups}
-              teachers={teachers}
-              exams={exams}
-            />
-          )}
-        </main>
-      </div>
+      {/* Global Command Palette (⌘K / Ctrl+K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        students={students}
+        classes={classes}
+        onSelectStudent={(st) => {
+          setActiveStudentProfile(st);
+        }}
+        onNavigateTab={(tab) => {
+          setCurrentTab(tab);
+        }}
+      />
 
       {/* Global Student 360° Profile Modal */}
       {activeStudentProfile && (
@@ -391,7 +391,7 @@ export default function App() {
         />
       )}
 
-      {/* Global Dynamic VietQR Payment Modal */}
+      {/* Global Smart VietQR Payment Modal */}
       {activeVietQRInvoice && (
         <VietQRModal
           invoice={activeVietQRInvoice}
@@ -399,6 +399,6 @@ export default function App() {
           onConfirmPayment={handleConfirmPayment}
         />
       )}
-    </div>
+    </ModernShell>
   );
 }

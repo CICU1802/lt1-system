@@ -110,8 +110,12 @@ export default function TuitionView({
   };
 
   const handleSendReminderSMS = (inv) => {
-    setSmsNotificationMsg(`Đã tạo tin nhắn nhắc học phí gửi đến phụ huynh học sinh ${inv.studentName} (${inv.studentCode}) thành công!`);
-    setTimeout(() => setSmsNotificationMsg(''), 4000);
+    const classId = inv.classNames?.[0]?.split(' ')[0] || 'TOAN10';
+    const cleanCode = (inv.studentCode || 'HS24-001').replace('-', '');
+    const text = `Kính gửi phụ huynh, học phí tháng của em ${inv.studentName} (${inv.studentCode}) tại Trung tâm LT1 là ${inv.remainingAmount.toLocaleString('vi-VN')} đ (Hạn đóng: ${inv.dueDate}). Phụ huynh có thể quét mã VietQR hoặc chuyển khoản cú pháp: LT1 ${cleanCode} ${classId}. Trân trọng!`;
+    navigator.clipboard.writeText(text);
+    setSmsNotificationMsg(`Đã sao chép tin nhắn nhắc học phí kèm cú pháp VietQR gửi phụ huynh em ${inv.studentName}!`);
+    setTimeout(() => setSmsNotificationMsg(''), 4500);
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Award,
   Plus,
@@ -9,22 +9,25 @@ import {
   Filter,
   Users,
   Calendar,
-  FileCheck
+  FileCheck,
+  CheckCircle2,
+  Keyboard,
+  BarChart3
 } from 'lucide-react';
 
 export default function GradebookView({
-  exams,
-  classes,
-  students,
+  exams = [],
+  classes = [],
+  students = [],
   onAddExam,
   onUpdateExamScores,
   onOpenStudentProfile
 }) {
   const [selectedClassId, setSelectedClassId] = useState(classes[0]?.id || '');
   const classExams = exams.filter(e => e.classId === selectedClassId);
-  const [selectedExamId, setSelectedExamId] = useState(classExams[0]?.id || '');
+  const [selectedExamId, setSelectedExamId] = useState(classExams[0]?.id || exams[0]?.id || '');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
 
   // Exam creation form
   const [examForm, setExamForm] = useState({
@@ -33,8 +36,8 @@ export default function GradebookView({
     maxScore: 10,
   });
 
-  const selectedClass = classes.find(c => c.id === selectedClassId);
-  const currentExam = exams.find(e => e.id === selectedExamId);
+  const selectedClass = classes.find(c => c.id === selectedClassId) || classes[0];
+  const currentExam = exams.find(e => e.id === selectedExamId) || classExams[0];
   const classStudents = students.filter(
     s => s.status === 'active' && s.classIds?.includes(selectedClassId)
   );
@@ -52,11 +55,36 @@ export default function GradebookView({
     });
   });
 
+  const scoreInputRefs = useRef([]);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4000);
+  };
+
   // Sync when class or exam changes
   const handleSelectExam = (examId) => {
     setSelectedExamId(examId);
     const ex = exams.find(e => e.id === examId);
     setScoresState(classStudents.map(st => {
+      const existing = ex?.scores?.find(s => s.studentId === st.id);
+      return {
+        studentId: st.id,
+        studentName: st.name,
+        score: existing ? existing.score : '',
+        comment: existing?.comment || ''
+      };
+    }));
+  };
+
+  const handleSelectClass = (clsId) => {
+    setSelectedClassId(clsId);
+    const cExams = exams.filter(e => e.classId === clsId);
+    const targetExamId = cExams[0]?.id || '';
+    setSelectedExamId(targetExamId);
+    const enrolled = students.filter(s => s.status === 'active' && s.classIds?.includes(clsId));
+    const ex = exams.find(e => e.id === targetExamId);
+    setScoresState(enrolled.map(st => {
       const existing = ex?.scores?.find(s => s.studentId === st.id);
       return {
         studentId: st.id,
@@ -75,14 +103,32 @@ export default function GradebookView({
     setScoresState(prev => prev.map(s => s.studentId === studentId ? { ...s, comment: val } : s));
   };
 
+  // EXCEL HOTKEYS: Enter / Tab / ArrowDown jumps to next student
+  const handleScoreKeyDown = (e, index) => {
+    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (index + 1 < classStudents.length) {
+        scoreInputRefs.current[index + 1]?.focus();
+        scoreInputRefs.current[index + 1]?.select();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (index - 1 >= 0) {
+        scoreInputRefs.current[index - 1]?.focus();
+        scoreInputRefs.current[index - 1]?.select();
+      }
+    }
+  };
+
+  // SAVE SCORES WITH NATURAL ACTION VOICE
   const handleSaveScores = () => {
     if (!currentExam) return;
+    const gradedCount = scoresState.filter(s => s.score !== '' && s.score !== null).length;
     onUpdateExamScores(currentExam.id, scoresState.map(s => ({
       ...s,
       score: s.score === '' ? 0 : Number(s.score)
     })));
-    setSaveSuccessMsg('Đã lưu bảng điểm và nhận xét vào hệ thống thành công!');
-    setTimeout(() => setSaveSuccessMsg(''), 3000);
+    showToast(`Đã lưu bảng điểm bài kiểm tra "${currentExam.title}". ${gradedCount}/${classStudents.length} học sinh đã được cập nhật điểm vào học bạ.`);
   };
 
   const handleCreateExam = (e) => {
@@ -99,7 +145,7 @@ export default function GradebookView({
       scores: classStudents.map(st => ({
         studentId: st.id,
         studentName: st.name,
-        score: 0,
+        score: '',
         comment: ''
       }))
     };
@@ -107,234 +153,299 @@ export default function GradebookView({
     onAddExam(newExam);
     setSelectedExamId(newExam.id);
     setIsModalOpen(false);
+    showToast(`Đã khởi tạo đợt kiểm tra mới: "${newExam.title}". Bạn có thể vào điểm ngay bây giờ.`);
   };
 
-  // Stats calculation
-  const validScores = scoresState.filter(s => s.score !== '' && !isNaN(Number(s.score)));
-  const avgScore = validScores.length > 0
-    ? (validScores.reduce((acc, s) => acc + Number(s.score), 0) / validScores.length).toFixed(1)
+  // Quick statistics calculation
+  const numericScores = scoresState
+    .map(s => Number(s.score))
+    .filter(sc => !isNaN(sc) && sc > 0);
+  
+  const avgScore = numericScores.length > 0
+    ? (numericScores.reduce((a, b) => a + b, 0) / numericScores.length).toFixed(1)
     : 0;
 
+  const maxScoreFound = numericScores.length > 0 ? Math.max(...numericScores) : 0;
+  const goodCount = numericScores.filter(s => s >= 8.0).length;
+  const fairCount = numericScores.filter(s => s >= 6.5 && s < 8.0).length;
+  const averageCount = numericScores.filter(s => s >= 5.0 && s < 6.5).length;
+  const weakCount = numericScores.filter(s => s < 5.0).length;
+
   return (
-    <div className="page-container">
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">
-            <Award size={24} color="var(--brand-blue)" />
-            Sổ Điểm, Đánh Giá & Theo Dõi Tiến Bộ
-          </h1>
-          <p className="page-description">
-            Tạo các bài kiểm tra 15 phút, 1 tiết, thi học kỳ; nhập điểm theo danh sách lớp và liên kết hồ sơ tra cứu.
-          </p>
-        </div>
-
-        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-          <Plus size={16} /> Tạo Lần Kiểm Tra Mới
-        </button>
-      </div>
-
-      {saveSuccessMsg && (
-        <div style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', padding: '12px 18px', borderRadius: 'var(--radius-md)', color: '#065f46', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Check size={18} /> {saveSuccessMsg}
+    <div className="space-y-4 max-w-7xl mx-auto">
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between gap-3 shadow-lg animate-in slide-in-from-top-1">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+          <button onClick={() => setToastMessage('')} className="text-emerald-400/80 hover:text-emerald-300">✕</button>
         </div>
       )}
 
-      {/* Selectors Toolbar */}
-      <div className="card" style={{ marginBottom: '20px' }}>
-        <div className="card-body" style={{ padding: '16px 20px', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>Chọn Lớp:</span>
-            <select
-              className="form-control"
-              style={{ width: '280px' }}
-              value={selectedClassId}
-              onChange={e => {
-                const newCls = e.target.value;
-                setSelectedClassId(newCls);
-                const exForCls = exams.filter(ex => ex.classId === newCls);
-                if (exForCls.length > 0) handleSelectExam(exForCls[0].id);
-              }}
-            >
-              {classes.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.code})
-                </option>
-              ))}
-            </select>
+      {/* TOP HEADER */}
+      <div className="p-4 rounded-xl bg-[#0B1120] border border-slate-800 flex items-center justify-between gap-4 flex-wrap shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/20">
+            <Award size={20} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-bold text-white tracking-tight">
+                Sổ Điểm Điện Tử & Khảo Sát Định Kỳ
+              </h1>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold uppercase flex items-center gap-1">
+                <Keyboard size={11} /> Excel Hotkeys
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Bấm phím Tab hoặc Enter để tự động chuyển dòng nhập điểm học sinh kế tiếp
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition flex items-center gap-1.5"
+          >
+            <Plus size={14} /> Tạo bài khảo sát mới
+          </button>
+
+          <button
+            onClick={handleSaveScores}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+          >
+            <Save size={14} /> Lưu Toàn Bộ Bảng Điểm
+          </button>
+        </div>
+      </div>
+
+      {/* SELECTORS & STATS BANNER */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Selectors */}
+        <div className="lg:col-span-8 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-4 flex-wrap text-xs">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 font-semibold">Chọn Lớp:</span>
+              <select
+                value={selectedClassId}
+                onChange={e => handleSelectClass(e.target.value)}
+                className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-medium focus:outline-none focus:border-amber-500"
+              >
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 font-semibold">Chọn Bài kiểm tra:</span>
+              <select
+                value={selectedExamId}
+                onChange={e => handleSelectExam(e.target.value)}
+                className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 font-medium focus:outline-none focus:border-amber-500"
+              >
+                {classExams.map(ex => (
+                  <option key={ex.id} value={ex.id}>
+                    {ex.title} (Ngày: {ex.date})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)' }}>Bài Kiểm Tra:</span>
-            <select
-              className="form-control"
-              style={{ width: '320px' }}
-              value={selectedExamId}
-              onChange={e => handleSelectExam(e.target.value)}
-            >
-              {classExams.map(ex => (
-                <option key={ex.id} value={ex.id}>
-                  {ex.title} (Ngày {ex.date})
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 text-slate-400">
+            <span>Sĩ số: <strong className="text-white">{classStudents.length} HS</strong></span>
           </div>
+        </div>
 
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <span className="badge badge-blue">Sĩ số: {classStudents.length} HS</span>
-            <span className="badge badge-success">Điểm TB Lớp: {avgScore} / 10</span>
-            <button className="btn btn-primary btn-sm" onClick={handleSaveScores}>
-              <Save size={14} /> Lưu Sổ Điểm
-            </button>
+        {/* Live Metrics Card */}
+        <div className="lg:col-span-4 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-around text-xs">
+          <div className="text-center">
+            <div className="text-[10px] text-slate-400 uppercase">Điểm TB Lớp</div>
+            <div className="text-base font-bold text-amber-400 mt-0.5">{avgScore}</div>
+          </div>
+          <div className="w-px h-7 bg-slate-800"></div>
+          <div className="text-center">
+            <div className="text-[10px] text-slate-400 uppercase">Điểm Cao Nhất</div>
+            <div className="text-base font-bold text-emerald-400 mt-0.5">{maxScoreFound}</div>
+          </div>
+          <div className="w-px h-7 bg-slate-800"></div>
+          <div className="text-center">
+            <div className="text-[10px] text-slate-400 uppercase">Giỏi (≥8.0)</div>
+            <div className="text-base font-bold text-blue-400 mt-0.5">{goodCount} HS</div>
           </div>
         </div>
       </div>
 
-      {/* Grade Entry Table */}
-      <div className="card">
-        <div className="card-header">
-          <div className="card-title">
-            <FileCheck size={18} color="var(--brand-blue)" />
-            Bảng Điểm: {currentExam?.title || 'Chưa chọn bài kiểm tra'}
-          </div>
-          <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-            Thang điểm: 0 - 10 | Điểm tự động cập nhật vào tài khoản học sinh / phụ huynh
+      {/* SPREADSHEET TABLE FOR GRADES */}
+      <div className="bg-[#0B1120] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <div className="px-4 py-3 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between text-xs">
+          <span className="font-semibold text-slate-300 flex items-center gap-2">
+            <FileCheck size={14} className="text-amber-400" />
+            Nhập Điểm: {currentExam?.title || 'Bài kiểm tra'}
+          </span>
+          <span className="text-slate-400 font-mono text-[11px]">
+            Nhấn Enter hoặc Tab để chuyển ô tiếp theo
           </span>
         </div>
 
-        <div className="table-container">
-          <table className="modern-table">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-300 border-collapse">
             <thead>
-              <tr>
-                <th>Mã HS</th>
-                <th>Họ và Tên Học Sinh</th>
-                <th style={{ width: '130px' }}>Điểm Số (/10)</th>
-                <th>Đánh Giá Xếp Loại</th>
-                <th>Nhận Xét Chi Tiết Của Giáo Viên</th>
+              <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 font-medium">
+                <th className="py-2.5 px-3 w-12 text-center">STT</th>
+                <th className="py-2.5 px-3">Mã HS & Họ Tên</th>
+                <th className="py-2.5 px-3 w-40 text-center">Điểm số (Thang 10)</th>
+                <th className="py-2.5 px-3 w-28 text-center">Xếp loại</th>
+                <th className="py-2.5 px-3">Nhận xét của Giáo viên</th>
               </tr>
             </thead>
-            <tbody>
-              {classStudents.length === 0 ? (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
-                    Không có học sinh trong lớp này.
-                  </td>
-                </tr>
-              ) : (
-                scoresState.map(stScore => {
-                  const num = Number(stScore.score);
-                  let rank = 'Chưa nhập';
-                  let rankBadge = 'badge-gray';
-                  if (stScore.score !== '' && !isNaN(num)) {
-                    if (num >= 9) { rank = 'Xuất Sắc'; rankBadge = 'badge-success'; }
-                    else if (num >= 8) { rank = 'Giỏi'; rankBadge = 'badge-blue'; }
-                    else if (num >= 6.5) { rank = 'Khá'; rankBadge = 'badge-warning'; }
-                    else { rank = 'Cần Bồi Dưỡng'; rankBadge = 'badge-danger'; }
+            <tbody className="divide-y divide-slate-800/60 font-sans">
+              {classStudents.map((st, idx) => {
+                const scItem = scoresState.find(s => s.studentId === st.id) || { score: '', comment: '' };
+                const numScore = Number(scItem.score);
+                let rankLabel = '—';
+                let rankClass = 'text-slate-500';
+
+                if (scItem.score !== '' && !isNaN(numScore)) {
+                  if (numScore >= 8.0) {
+                    rankLabel = 'Giỏi';
+                    rankClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+                  } else if (numScore >= 6.5) {
+                    rankLabel = 'Khá';
+                    rankClass = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                  } else if (numScore >= 5.0) {
+                    rankLabel = 'Trung bình';
+                    rankClass = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+                  } else {
+                    rankLabel = 'Yếu / Bù';
+                    rankClass = 'text-rose-400 bg-rose-500/10 border-rose-500/20';
                   }
+                }
 
-                  const studentObj = students.find(s => s.id === stScore.studentId);
+                return (
+                  <tr key={st.id} className="hover:bg-slate-900/40 transition">
+                    <td className="py-2.5 px-3 text-center font-mono text-slate-500 text-[11px]">
+                      {idx + 1}
+                    </td>
 
-                  return (
-                    <tr key={stScore.studentId}>
-                      <td>
-                        <button
-                          className="badge badge-blue"
-                          style={{ cursor: 'pointer', border: 'none' }}
-                          onClick={() => studentObj && onOpenStudentProfile(studentObj)}
-                          title="Bấm để xem lịch sử điểm qua các kỳ"
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          onClick={() => onOpenStudentProfile && onOpenStudentProfile(st)}
+                          className="font-semibold text-slate-200 hover:text-amber-400 transition cursor-pointer"
                         >
-                          {studentObj?.studentCode}
-                        </button>
-                      </td>
-                      <td>
-                        <strong>{stScore.studentName}</strong>
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          step="0.25"
-                          min="0"
-                          max="10"
-                          className="form-control"
-                          style={{ fontWeight: '800', textAlign: 'center', fontSize: '15px' }}
-                          value={stScore.score}
-                          onChange={e => handleScoreChange(stScore.studentId, e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <span className={`badge ${rankBadge}`}>{rank}</span>
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Nhận xét ưu điểm, phần bài làm cần khắc phục..."
-                          value={stScore.comment}
-                          onChange={e => handleCommentChange(stScore.studentId, e.target.value)}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+                          {st.name}
+                        </span>
+                        <span className="font-mono text-[10px] text-slate-400 bg-slate-900 px-1 py-0.2 rounded border border-slate-800">
+                          {st.studentCode}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Numeric Score Input with Excel Keys */}
+                    <td className="py-2.5 px-3 text-center">
+                      <input
+                        ref={el => scoreInputRefs.current[idx] = el}
+                        type="number"
+                        step="0.25"
+                        min="0"
+                        max="10"
+                        placeholder="0.0"
+                        value={scItem.score}
+                        onChange={e => handleScoreChange(st.id, e.target.value)}
+                        onKeyDown={e => handleScoreKeyDown(e, idx)}
+                        className="w-24 text-center py-1 rounded-lg bg-slate-950 border border-slate-800 text-amber-400 font-mono font-bold text-sm focus:outline-none focus:border-amber-500 focus:bg-amber-500/5 transition"
+                      />
+                    </td>
+
+                    {/* Rank Badge */}
+                    <td className="py-2.5 px-3 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${rankClass}`}>
+                        {rankLabel}
+                      </span>
+                    </td>
+
+                    {/* Comment */}
+                    <td className="py-2.5 px-3">
+                      <input
+                        type="text"
+                        placeholder="Nhận xét ưu/nhược điểm..."
+                        value={scItem.comment}
+                        onChange={e => handleCommentChange(st.id, e.target.value)}
+                        className="w-full px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Create Exam Modal */}
+      {/* CREATE EXAM MODAL */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title">Tạo Lần Kiểm Tra Mới</div>
-              <button className="btn-icon" onClick={() => setIsModalOpen(false)}>&times;</button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md bg-[#0B1120] border border-slate-700 rounded-2xl shadow-2xl p-5 text-slate-100">
+            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              <Award size={16} className="text-amber-400" /> Tạo Đợt Khảo Sát / Thi Thử Mới
+            </h3>
 
-            <form onSubmit={handleCreateExam}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label">Tên Bài Kiểm Tra / Khảo Sát *</label>
+            <form onSubmit={handleCreateExam} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">Tên bài kiểm tra / Khảo sát</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Khảo sát Toán 10 Lần 1 - Chuyên đề Hàm Số"
+                  value={examForm.title}
+                  onChange={e => setExamForm({ ...examForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Ngày thi</label>
                   <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Ví dụ: Kiểm tra 1 tiết Đại số chương 2, Thi thử ĐH đợt 1..."
-                    value={examForm.title}
-                    onChange={e => setExamForm({ ...examForm, title: e.target.value })}
+                    type="date"
                     required
+                    value={examForm.date}
+                    onChange={e => setExamForm({ ...examForm, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-amber-500"
                   />
                 </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Ngày Kiểm Tra *</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={examForm.date}
-                      onChange={e => setExamForm({ ...examForm, date: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Thang Điểm Tối Đa</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={examForm.maxScore}
-                      onChange={e => setExamForm({ ...examForm, maxScore: e.target.value })}
-                    />
-                  </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Thang điểm tối đa</label>
+                  <input
+                    type="number"
+                    required
+                    value={examForm.maxScore}
+                    onChange={e => setExamForm({ ...examForm, maxScore: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-amber-500 font-mono"
+                  />
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
-                  Hủy Bỏ
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium"
+                >
+                  Hủy
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Khởi Tạo Bài Kiểm Tra
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold"
+                >
+                  Tạo bài kiểm tra
                 </button>
               </div>
             </form>
